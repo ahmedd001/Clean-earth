@@ -1,0 +1,10 @@
+streamlit>=1.44.1
+pandas>=2.2.3
+openpyxl>=3.1.5
+yagmail>=0.15.293
+jinja2>=3.1.6
+altair>=5.5.0
+plotly>=5.15.0
+nltk>=3.9.1
+transformers>=4.51.1
+torch>=2.6.0
