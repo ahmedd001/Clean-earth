@@ -10,8 +10,8 @@ def send_email_smtp(
 ):
     """
     Sends an HTML email via Gmail SMTP using yagmail.
-    - html_body: fully inlined HTML string
-    - attachments: list of yagmail.inline(...) or file-like objects
+    - html_body should be a full HTML string.
+    - attachments can be a list of inlines (yagmail.inline) or file-like objects.
     """
     yag = yagmail.SMTP(
         user=sender_email,
@@ -22,10 +22,10 @@ def send_email_smtp(
         smtp_ssl=False,
     )
 
-    # Wrap HTML into a raw part
-    html_part = yagmail.raw(html_body, "text/html")
-    contents = [html_part]
+    # Let yagmail detect HTML from the first string item
+    contents = [html_body]
 
+    # tack on any inline images or attachments
     if attachments:
         contents.extend(attachments)
 
