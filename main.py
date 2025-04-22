@@ -323,85 +323,75 @@ elif page == "Upload & Segment":
 #email page
 
 
+# … inside your EMAIL CAMPAIGN tab …
 elif page == "Email Campaign":
     st.header("Bulk Email Campaign")
-    st.write("Configure and send personalized emails using Gmail SMTP.")
-
     if "CleanedData" not in st.session_state or st.session_state["CleanedData"].empty:
-        st.warning("Please upload and clean leads in 'Upload & Segment' first.")
+        st.warning("Please upload & clean leads first.")
         st.stop()
 
     df = st.session_state["CleanedData"]
     st.dataframe(df.head())
 
-    c1, c2 = st.columns(2)
-    with c1:
-        sender_email = st.text_input("Your Gmail Address", placeholder="you@example.com")
-    with c2:
+    # SMTP credentials & subject
+    col1, col2 = st.columns(2)
+    with col1:
+        sender_email = st.text_input("Your Gmail Address")
+    with col2:
         sender_password = st.text_input("Gmail App Password", type="password")
     subject = st.text_input("Email Subject", "Greetings from Clean Earth")
 
-    # load your Jinja2 HTML template
+    # Load HTML template
     tpl_path = os.path.join("Template", "email.html")
     tpl_str = open(tpl_path, "r", encoding="utf-8").read()
+
     if st.checkbox("Use custom HTML template?"):
-        up = st.file_uploader("Upload custom HTML", type="html")
-        if up:
-            tpl_str = up.read().decode("utf-8")
+        uploaded = st.file_uploader("Upload HTML", type="html")
+        if uploaded:
+            tpl_str = uploaded.read().decode("utf-8")
 
-    attachment_file = st.file_uploader(
-        "Optional Attachment (PDF/DOCX/PNG/JPG)", 
-        type=["pdf", "docx", "png", "jpg"],
-        key="attachment"
+    # Optional attachment
+    file_attach = st.file_uploader(
+        "Attachment (PDF/DOCX/PNG/JPG)", ["pdf","docx","png","jpg"], key="attachment"
     )
-
-    # prepare inline images
-    img_dir = os.path.join("Assets", "Images")
-    inline_imgs = []
-    if os.path.isdir(img_dir):
-        for fname in os.listdir(img_dir):
-            if fname.lower().endswith((".png","jpg","jpeg","gif")):
-                inline_imgs.append(yagmail.inline(os.path.join(img_dir, fname)))
 
     if st.button("Send Emails"):
         total = len(df)
-        progress = st.progress(0)
         sent = 0
+        progress = st.progress(0)
 
-        for idx, row in df.iterrows():
-            progress.progress((idx+1)/total)
-            recipient = row.get("Email")
-            if not recipient or pd.isnull(recipient):
+        # initialize SMTP
+        yag = yagmail.SMTP(user=sender_email, password=sender_password)
+
+        for i, row in df.iterrows():
+            progress.progress((i + 1) / total)
+            to = row.get("Email")
+            if not to or pd.isna(to):
                 continue
 
+            # Render with Jinja (passes CalendlyLink into your <a href="{{ CalendlyLink }}">
             html_body = Template(tpl_str).render(
-                FirstName    = row.get("FirstName","there"),
-                LastName     = row.get("LastName",""),
-                Company      = row.get("Company","your company"),
+                FirstName    = row.get("FirstName", "Friend"),
+                LastName     = row.get("LastName", ""),
+                Company      = row.get("Company", "your company"),
                 CalendlyLink = "https://calendly.com/clean-earth"
             )
 
-            # build the final attachments list
-            attachments = inline_imgs.copy()
-            if attachment_file:
-                bio = BytesIO(attachment_file.read())
-                bio.name = attachment_file.name
-                attachments.append(bio)
+            # Build contents: HTML + any attachment
+            contents = [html_body]
+            if file_attach:
+                bio = BytesIO(file_attach.read())
+                bio.name = file_attach.name
+                contents.append(bio)
 
             try:
-                send_email_smtp(
-                    sender_email,
-                    sender_password,
-                    recipient,
-                    subject,
-                    html_body,
-                    attachments=attachments
-                )
+                yag.send(to=to, subject=subject, contents=contents)
                 sent += 1
             except Exception as e:
-                st.error(f"❌ Failed to send to {recipient}: {e}")
+                st.error(f"❌ Failed to send to {to}: {e}")
 
         st.success(f"✅ Emails sent to {sent} out of {total} contacts!")
+
 
 
 
