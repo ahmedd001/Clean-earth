@@ -371,8 +371,8 @@ elif page == "Email Campaign":
 
             # Render with Jinja (passes CalendlyLink into your <a href="{{ CalendlyLink }}">
             html_body = Template(tpl_str).render(
-                FirstName    = row.get("FirstName", "Friend"),
-                LastName     = row.get("LastName", ""),
+                FirstName    = row.get("First Name", "Friend"),
+                LastName     = row.get("Last Name", ""),
                 Company      = row.get("Company", "your company"),
                 CalendlyLink = "https://calendly.com/clean-earth"
             )
