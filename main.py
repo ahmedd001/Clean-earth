@@ -15,6 +15,12 @@ import yagmail
 from utils.seamless_ai import fetch_seamless_leads
 from utils.email_sender import send_email_smtp
 from utils.appointment_notifier import get_bookings
+from utils.gmass_api import get_quota, get_campaign_status, pause_campaign, resume_campaign, cancel_campaign
+from dotenv import load_dotenv
+
+load_dotenv()
+
+GMASS_API_KEY = os.getenv("GMASS_API_KEY")
 
 # Initialize an in-memory DataFrame to store email logs
 email_logs_df = pd.DataFrame(columns=["recipient", "subject", "status", "error", "appointment_booked", "timestamp"])
@@ -215,7 +221,8 @@ st.sidebar.info("This app uses Gmail SMTP, VADER, and Plotly.")
 # -------------------------
 TABS = [
     "Home", "Upload & Segment", "Email Campaign",
-    "Analytics", "Calendly / Appointments", "Sentiment Analysis"
+    "Analytics", "Calendly / Appointments", "Sentiment Analysis",
+    "GMass Management"   # <-- NEW
 ]
 page = st.selectbox("Navigate", TABS)
 
@@ -487,7 +494,50 @@ elif page == "Sentiment Analysis":
         else:
             st.error("Please enter some text to analyze.")
 
+
+# -------------------------
+# GMass Management PAGE
+# -------------------------
+elif page == "GMass Management":
+    st.header("GMass API Management")
+
+    if GMASS_API_KEY:
+        option = st.selectbox("Choose an action", ["View Quota", "Check Campaign Status", "Pause Campaign", "Resume Campaign", "Cancel Campaign"])
+
+        if option == "View Quota":
+            if st.button("Get Quota"):
+                data = get_quota(GMASS_API_KEY)
+                st.json(data)
+
+        elif option == "Check Campaign Status":
+            campaign_id = st.text_input("Enter Campaign ID")
+            if st.button("Check Status"):
+                data = get_campaign_status(GMASS_API_KEY, campaign_id)
+                st.json(data)
+
+        elif option == "Pause Campaign":
+            campaign_id = st.text_input("Enter Campaign ID to Pause")
+            if st.button("Pause"):
+                data = pause_campaign(GMASS_API_KEY, campaign_id)
+                st.json(data)
+
+        elif option == "Resume Campaign":
+            campaign_id = st.text_input("Enter Campaign ID to Resume")
+            if st.button("Resume"):
+                data = resume_campaign(GMASS_API_KEY, campaign_id)
+                st.json(data)
+
+        elif option == "Cancel Campaign":
+            campaign_id = st.text_input("Enter Campaign ID to Cancel")
+            if st.button("Cancel"):
+                data = cancel_campaign(GMASS_API_KEY, campaign_id)
+                st.json(data)
+    else:
+        st.warning("GMass API Key is missing. Please check your .env file.")
+
+
 # -------------------------
 # FOOTER
 # -------------------------
 st.markdown(f"<div class='footer'>© {datetime.now().year} Clean Earth. All rights reserved.</div>", unsafe_allow_html=True)
+
